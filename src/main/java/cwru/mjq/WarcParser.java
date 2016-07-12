@@ -16,10 +16,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
 
 
-/**
- * Created by majunqi0102 on 7/8/16.
- */
-
 public class WarcParser {
 
     public static class Error extends Exception {

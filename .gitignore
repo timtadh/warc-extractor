@@ -1,0 +1,8 @@
+*~
+*.swp
+*.swo
+*.idea
+.gradle
+*.warc.gz
+*.warc
+build/

@@ -1,0 +1,31 @@
+group 'cwru'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
+
+//the default jvm is 1.7, i have to use jdk 1.8
+tasks.withType(JavaCompile) {
+    options.fork = true
+    options.forkOptions.executable = "/usr/java/jdk1.8.0_91/bin/javac"
+}
+
+mainClassName = 'cwru.mjq.WarcExtractor'
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    manifest {
+        attributes 'WarcExtractor-Class': mainClassName
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile 'org.apache.hadoop:hadoop-core:0.20.2'
+    compile 'org.netpreserve.commons:webarchive-commons:1.1.6'
+    compile 'org.slf4j:slf4j-parent:1.7.21'
+}

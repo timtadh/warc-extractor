@@ -38,17 +38,17 @@ public class WarcExtractor {
 
     private static void findHtmlBodyInWarchRecord(int number, String file, String outputDir, Boolean isFile) throws IOException {
         File f;
-        ParserWarc pw;
+        WarcParser pw;
 
         if (isFile) {
             f = new File(file);
             if (f == null)
                 throw new NullPointerException();
-            pw = new ParserWarc(f);
+            pw = new WarcParser(f);
 
         } else {
             f = new File("CC-MAIN-20151124205404-00008-ip-10-71-132-137.ec2.internal.warc.gz");
-            pw = new ParserWarc(f);
+            pw = new WarcParser(f);
         }
 
         HashSet<HtmlEntity> htmlEntityHashSet = pw.getHtmlSet(number);

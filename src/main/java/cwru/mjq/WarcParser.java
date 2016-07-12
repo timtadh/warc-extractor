@@ -5,65 +5,101 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.SecureRandom;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by majunqi0102 on 7/8/16.
  */
 
-public class ParserWarc {
-    private static final Logger logger = LoggerFactory
-            .getLogger(ParserWarc.class);
+public class WarcParser {
 
-    private File file = null;
-    private GZIPInputStream gzInputStream1 = null;
-    private GZIPInputStream gzInputStream2 = null;
-    private DataInputStream inStream = null;
-    private DataInputStream inStream2 = null;
-    private WarcRecord thisWarcRecord = null;
-    private WarcRecord thisWarcRecord2 = null;
-    private List<Integer> indexOfHtmlList = null;
-    private int numberOfHtml = 0;
-
-    public ParserWarc(File file) {
-        super();
-        this.file = file;
-        try {
-            gzInputStream1 = new GZIPInputStream(new FileInputStream(this.file));
-            gzInputStream2 = new GZIPInputStream(new FileInputStream(this.file));
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new RuntimeException(e);
+    public static class Error extends Exception {
+        public Error(String msg) {
+            super(msg);
         }
-        inStream = new DataInputStream(gzInputStream1);
-        inStream2 = new DataInputStream(gzInputStream2);
     }
 
-    private void getNumberOfHtml() {
-        indexOfHtmlList = new ArrayList<>();
-
-        try {
-            while ((thisWarcRecord = WarcRecord.readNextWarcRecord(inStream)) != null) {
-                if (thisWarcRecord.getHeaderRecordType().equals("response") && thisWarcRecord.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
-                    indexOfHtmlList.add(numberOfHtml);
-                }
-                numberOfHtml++;
-            }
-
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
+    public static class NotZip extends Error {
+        public NotZip(String path) {
+            super(String.format("File %s was not a gzip file", path));
         }
+    }
+
+    public static class ReadError extends Error {
+        public ReadError(String path, String msg) {
+            super(String.format("Error reading file %s: %s", path, msg));
+        }
+    }
+
+    // private static final Logger logger = LoggerFactory
+    //         .getLogger(ParserWarc.class);
+
+    private File file = null;
+
+    public WarcParser(File file) {
+        this.file = file;
+    }
+
+    static List<Integer> randomSample(int populationSize, int sampleSize) {
+        if (populationSize < 1 || sampleSize < 1) {
+            throw new RuntimeException(String.format(
+                  "randomSample arguments out of bounds %d %d",
+                  populationSize, sampleSize));
+        }
+        if (sampleSize > populationSize) {
+            sampleSize = populationSize;
+        }
+        Random random = new SecureRandom();
+        List<Integer> samples = new ArrayList<>(sampleSize);
+        Set<Integer> seen = new HashSet<>(sampleSize);
+        for (int i = 0; i < sampleSize; i++) {
+            int s = random.nextInt(populationSize);
+            while (seen.contains(s)) {
+                s = random.nextInt(populationSize);
+            }
+            samples.add(s);
+            seen.add(s);
+        }
+        return samples;
+    }
+
+    DataInputStream gzipStream(File f) throws Error {
+        try {
+            return new DataInputStream(new GZIPInputStream(new FileInputStream(this.file)));
+        } catch (ZipException e) {
+            throw new NotZip(this.file.getPath());
+        } catch (IOException e) {
+            throw new ReadError(this.file.getPath(), e.toString());
+        }
+    }
+
+    private int numberOfHtmlRecords() throws Error {
+        DataInputStream inStream = gzipStream(this.file);
+        int count = 0;
+        WarcRecord r;
+        try {
+            while ((r = WarcRecord.readNextWarcRecord(inStream)) != null) {
+                if (r.getHeaderRecordType().equals("response") &&
+                    r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
+                    count++;
+                }
+            }
+        } catch (IOException e) {
+            throw new ReadError(this.file.getPath(), e.toString());
+        }
+        return count;
     }
 
     public HashSet<HtmlEntity> getHtmlSet(int number) throws IOException {
+      throw new RuntimeException("unimplemented");
+      /*
         HashSet<HtmlEntity> htmlEntitySet = new HashSet<HtmlEntity>();
         getNumberOfHtml();
         if (number > indexOfHtmlList.size())
@@ -107,13 +143,7 @@ public class ParserWarc {
                             // System.out.println(thisWarcRecord.getContentUTF8());
                             if (httpHeaderMap.get("Content-Type").indexOf("text/html") == -1)
                                 continue;
-
-                        /*
-                         * for (Entry<String, String> per :
-                         * httpHeaderMap.entrySet()) {
-                         * System.out.println(per.getKey()+":"+per.getValue());
-                         * }
-                         */
+/
 
                             HtmlEntity htmlEntity = new HtmlEntity();
 
@@ -151,5 +181,6 @@ public class ParserWarc {
 //            e.printStackTrace();
             return null;
         }
+    */
     }
 }

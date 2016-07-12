@@ -1,8 +1,5 @@
 package cwru.mjq;
 
-/**
- * Created by majunqi0102 on 7/8/16.
- */
 /*
 Lemur License Agreement
 
@@ -43,10 +40,6 @@ Lemur License Agreement
   USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
   DAMAGE.
 
- */
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
  */
 
 import java.io.DataInput;

@@ -1,8 +1,6 @@
 package cwru.mjq;
 
-/**
- * Created by majunqi0102 on 7/8/16.
- */
+
 
 import java.util.Map;
 import java.util.Set;

@@ -2,9 +2,7 @@ package cwru.mjq;
 
 import java.io.*;
 
-/**
- * Created by majunqi0102 on 7/8/16.
- */
+
 public class MJQFileWriter {
 
     File f = null;

@@ -1,7 +1,9 @@
 # warc-extractor
 
+by Junqi Ma (jxm844@case.edu) and Tim Henderson (tim.tadh@gmail.com)
+
 Example
 
 ```
-./WarcExtractor -n 20 --file CC-MAIN-20151124205404-00008-ip-10-71-132-137.ec2.internal.warc.gz  -o result-dir
+./WarcExtractor -n 20 --file crawl-file.warc.gz  -o result-dir
 ```

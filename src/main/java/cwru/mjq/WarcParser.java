@@ -5,8 +5,10 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.security.SecureRandom;
 import java.util.*;
@@ -38,6 +40,14 @@ public class WarcParser {
         }
     }
 
+    public static class WriteError extends Error {
+        public WriteError(String path, String msg) {
+            super(String.format("Error writing file %s: %s", path, msg));
+        }
+    }
+
+
+
     // private static final Logger logger = LoggerFactory
     //         .getLogger(ParserWarc.class);
 
@@ -67,6 +77,7 @@ public class WarcParser {
             samples.add(s);
             seen.add(s);
         }
+        Collections.sort(samples);
         return samples;
     }
 
@@ -92,95 +103,50 @@ public class WarcParser {
                 }
             }
         } catch (IOException e) {
-            throw new ReadError(this.file.getPath(), e.toString());
+            throw new ReadError(this.file.getPath(), e.getMessage());
         }
         return count;
     }
 
-    public HashSet<HtmlEntity> getHtmlSet(int number) throws IOException {
-      throw new RuntimeException("unimplemented");
-      /*
-        HashSet<HtmlEntity> htmlEntitySet = new HashSet<HtmlEntity>();
-        getNumberOfHtml();
-        if (number > indexOfHtmlList.size())
-            throw new RuntimeException();
-
-        Random random = new Random();
-        IntStream intStream = random.ints(0, indexOfHtmlList.size());
-        List<Integer> randomIndexOfHtml = intStream.limit(number).boxed().collect(Collectors.toList());
-        Collections.sort(randomIndexOfHtml);
-
-
-        int i = 0;
-        int j = 0;
+    WarcRecord getNextRec(DataInputStream inStream) throws ReadError {
         try {
-            while (((thisWarcRecord2 = WarcRecord.readNextWarcRecord(inStream2)) != null) && j < number) {
-                try {
-                    // see if it's a response record
-                    if (i == indexOfHtmlList.get(randomIndexOfHtml.get(j)).intValue()) {
-                        if (thisWarcRecord2.getHeaderRecordType().equals("response") && thisWarcRecord2.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
-                            // it is - create a WarcHTML record
-                            WarcHTMLResponseRecord htmlRecord = new WarcHTMLResponseRecord(thisWarcRecord2);
-                            // get our TREC ID and target URI
-                            String thisTargetURI = htmlRecord.getTargetURI();
-
-                            InputStreamReader in = new InputStreamReader(new ByteArrayInputStream(thisWarcRecord2.getContent()));
-
-                            BufferedReader br = new BufferedReader(in);
-
-                            String line = br.readLine();
-                            Map<String, String> httpHeaderMap = new HashMap<String, String>();
-                            while (!(line = br.readLine()).isEmpty()) {
-                                int temp = line.indexOf(":");
-                                httpHeaderMap.put(line.substring(0, temp).trim(),
-                                        line.substring(temp + 1).trim());
-                            }
-
-                            StringBuffer sb = new StringBuffer();
-                            while ((line = br.readLine()) != null)
-                                sb.append(line);
-
-                            // System.out.println(thisWarcRecord.getContentUTF8());
-                            if (httpHeaderMap.get("Content-Type").indexOf("text/html") == -1)
-                                continue;
-/
-
-                            HtmlEntity htmlEntity = new HtmlEntity();
-
-                            htmlEntity.setHeaderMap(httpHeaderMap);
-                            htmlEntity.setContent(sb.toString());
-                            htmlEntity.setUrl(thisTargetURI);
-                            br.close();
-                            in.close();
-
-                            htmlEntitySet.add(htmlEntity);
-                            j++;
-                        }
-                    }
-                    i++;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    logger.error(e.getMessage());
-
-                }
-            }
-
-            try {
-                inStream.close();
-                inStream2.close();
-                gzInputStream1.close();
-                gzInputStream2.close();
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-                e.printStackTrace();
-            }
-            return htmlEntitySet;
-        } catch (Exception e) {
-            //if the warc file doesn't have html it will show the errors
-            System.err.println(e.getMessage());
-//            e.printStackTrace();
-            return null;
+            return WarcRecord.readNextWarcRecord(inStream);
+        } catch (IOException e) {
+            throw new ReadError(this.file.getPath(), e.getMessage());
         }
-    */
+    }
+
+    public void sample(int sampleSize, String outputDir) throws Error {
+        List<Integer> samples = randomSample(numberOfHtmlRecords(), sampleSize);
+        System.out.println(samples);
+        DataInputStream inf = gzipStream(this.file);
+        int recordIdx = 0;
+        int sampleIdx = 0;
+        int toSample = samples.get(sampleIdx);
+        WarcRecord r = getNextRec(inf);
+        while (r != null) {
+            if (r.getHeaderRecordType().equals("response") &&
+                r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
+                if (toSample == recordIdx) {
+                    System.out.println(String.format("sampling %d %d %d", sampleIdx, toSample, recordIdx));
+                    write(sampleIdx, r, outputDir);
+                    sampleIdx++;
+                    toSample = samples.get(sampleIdx);
+                }
+                recordIdx++;
+            }
+            r = getNextRec(inf);
+        }
+    }
+
+    public void write(int i, WarcRecord r, String outputDir) throws WriteError {
+        String path = outputDir + "/" + i + ".html";
+        try (FileOutputStream ouf = new FileOutputStream(path)) {
+            ouf.write(r.getContent());
+        } catch (FileNotFoundException e) {
+            throw new WriteError(path, e.getMessage());
+        } catch (IOException e) {
+            throw new WriteError(path, e.getMessage());
+        }
     }
 }

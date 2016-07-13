@@ -5,4 +5,7 @@
 .gradle
 *.warc.gz
 *.warc
+*.iml
+*.ipr
+*.iws
 build/

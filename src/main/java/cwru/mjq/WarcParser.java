@@ -119,20 +119,21 @@ public class WarcParser {
         int recordIdx = 0;
         int sampleIdx = 0;
         int toSample = samples.get(sampleIdx);
+        sampleIdx++;
         WarcRecord r = getNextRec(inf);
-        while (r != null) {
-            if (r.getHeaderRecordType().equals("response") &&
-                r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
+        while (r != null && sampleIdx <= sampleSize - 1) {
+            if (r.getHeaderRecordType().equals("response") && r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
                 if (toSample == recordIdx) {
                     System.out.println(String.format("sampling %d %d %d", sampleIdx, toSample, recordIdx));
                     write(sampleIdx, r, outputDir);
-                    sampleIdx++;
                     toSample = samples.get(sampleIdx);
+                    sampleIdx++;
                 }
                 recordIdx++;
             }
             r = getNextRec(inf);
         }
+        System.out.println(sampleIdx + 1 + " files have been written to the directory: " + outputDir);
     }
 
     public void write(int i, WarcRecord r, String outputDir) throws WriteError {

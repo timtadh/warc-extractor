@@ -10,6 +10,9 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.FileSystems;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -137,13 +140,33 @@ public class WarcParser {
     }
 
     public void write(int i, WarcRecord r, String outputDir) throws WriteError {
-        String path = outputDir + "/" + i + ".html";
-        try (FileOutputStream ouf = new FileOutputStream(path)) {
-            ouf.write(r.getContent());
-        } catch (FileNotFoundException e) {
-            throw new WriteError(path, e.getMessage());
+        Path path = FileSystems.getDefault().getPath(outputDir, + i + ".html");
+        InputStream fin = new ByteArrayInputStream(r.getContent());
+        try {
+            int newlines = 0;
+            while (fin.available() > 0) {
+                int c = fin.read();
+                if (c < 0) {
+                    break;
+                }
+                if ((byte)c == '\n') {
+                    newlines++;
+                } else if ((byte)c == '\r') {
+                    // skip
+                } else {
+                    newlines = 0;
+                }
+                if (newlines > 1) {
+                    break;
+                }
+            }
         } catch (IOException e) {
-            throw new WriteError(path, e.getMessage());
+            throw new WriteError(path.toString(), e.getMessage());
+        }
+        try (InputStream inf = fin) {
+            Files.copy(inf, path);
+        } catch (IOException e) {
+            throw new WriteError(path.toString(), e.getMessage());
         }
     }
 }

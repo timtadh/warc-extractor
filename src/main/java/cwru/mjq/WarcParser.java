@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.FileSystems;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
 
@@ -46,7 +47,6 @@ public class WarcParser {
     }
 
 
-
     // private static final Logger logger = LoggerFactory
     //         .getLogger(ParserWarc.class);
 
@@ -59,8 +59,8 @@ public class WarcParser {
     static List<Integer> randomSample(int populationSize, int sampleSize) {
         if (populationSize < 1 || sampleSize < 1) {
             throw new RuntimeException(String.format(
-                  "randomSample arguments out of bounds %d %d",
-                  populationSize, sampleSize));
+                    "randomSample arguments out of bounds %d %d",
+                    populationSize, sampleSize));
         }
         if (sampleSize > populationSize) {
             sampleSize = populationSize;
@@ -97,7 +97,7 @@ public class WarcParser {
         try {
             while ((r = WarcRecord.readNextWarcRecord(inStream)) != null) {
                 if (r.getHeaderRecordType().equals("response") &&
-                    r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
+                        r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
                     count++;
                 }
             }
@@ -125,14 +125,17 @@ public class WarcParser {
         sampleIdx++;
         WarcRecord r = getNextRec(inf);
         while (r != null && sampleIdx <= sampleSize - 1) {
-            if (r.getHeaderRecordType().equals("response") && r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
-                if (toSample == recordIdx) {
-                    System.out.println(String.format("sampling %d %d %d", sampleIdx, toSample, recordIdx));
-                    write(sampleIdx, r, outputDir);
-                    toSample = samples.get(sampleIdx);
-                    sampleIdx++;
+            if (Integer.parseInt(r.getHeaderMetadataItem("Content-Length")) > 350000) {
+                if (r.getHeaderRecordType().equals("response") && r.getHeaderMetadataItem("Content-Type").indexOf("application/http") != -1) {
+                    if (toSample == recordIdx) {
+                        System.out.println(String.format("sampling %d %d %d", sampleIdx, toSample, recordIdx));
+//                    System.out.println("content_length:" + r.getHeaderMetadataItem("Content-Length"));
+                        write(sampleIdx, r, outputDir);
+                        toSample = samples.get(sampleIdx);
+                        sampleIdx++;
+                    }
+                    recordIdx++;
                 }
-                recordIdx++;
             }
             r = getNextRec(inf);
         }
@@ -140,7 +143,7 @@ public class WarcParser {
     }
 
     public void write(int i, WarcRecord r, String outputDir) throws WriteError {
-        Path path = FileSystems.getDefault().getPath(outputDir, + i + ".html");
+        Path path = FileSystems.getDefault().getPath(outputDir, +i + ".html");
         InputStream fin = new ByteArrayInputStream(r.getContent());
         try {
             int newlines = 0;
@@ -149,9 +152,9 @@ public class WarcParser {
                 if (c < 0) {
                     break;
                 }
-                if ((byte)c == '\n') {
+                if ((byte) c == '\n') {
                     newlines++;
-                } else if ((byte)c == '\r') {
+                } else if ((byte) c == '\r') {
                     // skip
                 } else {
                     newlines = 0;

@@ -8,3 +8,5 @@ Example
 ```
 ./WarcExtractor -n 30000 --file crawl-file.warc.gz  -o result-dir
 ```
+
+TODO: add command input to give the size of html file
